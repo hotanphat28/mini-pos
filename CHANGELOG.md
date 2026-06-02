@@ -2,6 +2,18 @@
 
 Tất cả các thay đổi và cập nhật tính năng của dự án Mini POS sẽ được ghi chú tại đây. Dự án tuân theo tiêu chuẩn [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-06-02
+
+### Đã thêm (Added)
+- Báo cáo doanh thu chi tiết (Detailed Reports): Hiển thị từng đơn hàng, kèm thông tin nhân viên (người bán), ngày giờ, và chi tiết các món (khi hover).
+- Quản lý hình ảnh: Thêm tính năng upload hình ảnh cho sản phẩm. Backend lưu ảnh vào thư mục `backend/uploads/` thông qua `multer`.
+- Tùy chọn món ăn (Food Options): Hỗ trợ thêm các tùy chọn (kèm giá) riêng biệt cho danh mục thức ăn, cho phép nhân viên tích chọn khi thêm vào giỏ hàng.
+
+### Thay đổi (Changed)
+- Cấu trúc danh mục được cố định thành 2 nhóm chính: "Thức uống" và "Thức ăn".
+- Nâng cấp Quản lý thực đơn: Thêm Form cập nhật sản phẩm (Edit), bao gồm các trường hình ảnh, tùy chọn, và trạng thái (Active/Inactive).
+- Giao diện Admin Dashboard & POS: Cải tiến UX/UI, tự động ẩn các món ăn có trạng thái Inactive trên màn hình POS.
+
 ## [1.0.0] - 2026-06-02
 
 ### Đã thêm (Added)

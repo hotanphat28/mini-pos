@@ -4,8 +4,8 @@ Hệ thống quản lý bán hàng (Point of Sale) nhỏ gọn dành cho quán c
 Được thiết kế theo tiêu chí "Cài 1 lần, dùng mãi mãi", không yêu cầu phí duy trì server, tự động kết nối qua mạng nội bộ và hỗ trợ in hóa đơn nhiệt (K58/K80).
 
 ## Cấu trúc dự án
-- `backend/`: Máy chủ Node.js với Express, cung cấp các API để quản lý dữ liệu. Sử dụng Database dạng JSON cục bộ (`pos_db.json`) để dễ cài đặt trên mọi hệ điều hành. Tích hợp thư viện điều khiển máy in nhiệt.
-- `frontend/`: Ứng dụng Single Page bằng ReactJS + Vite + Tailwind CSS. Giao diện được tối ưu hiển thị tốt cho máy tính thu ngân và cả điện thoại nhân viên order.
+- `backend/`: Máy chủ Node.js với Express, cung cấp các API để quản lý dữ liệu. Sử dụng Database dạng JSON cục bộ (`pos_db.json`) để dễ cài đặt trên mọi hệ điều hành. Có tích hợp `multer` để xử lý upload ảnh tại thư mục `uploads/`. Tích hợp thư viện điều khiển máy in nhiệt.
+- `frontend/`: Ứng dụng Single Page bằng ReactJS + Vite + Tailwind CSS. Giao diện được tối ưu hiển thị tốt cho máy tính thu ngân và cả điện thoại nhân viên order. Hỗ trợ hiển thị menu động, chọn tùy chọn (topping) và báo cáo doanh thu chi tiết từng đơn hàng.
 
 ## Hướng dẫn cài đặt & chạy ứng dụng
 1. **Chạy trên Windows**: Click đúp vào file `start.bat`. Script sẽ tự động cài các gói NPM cần thiết và bật cả Backend lẫn Frontend.

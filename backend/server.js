@@ -3,12 +3,37 @@ const cors = require('cors');
 const db = require('./database');
 const ThermalPrinter = require("node-thermal-printer").printer;
 const PrinterTypes = require("node-thermal-printer").types;
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const port = 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Configure multer
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir)
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname))
+    }
+});
+const upload = multer({ storage: storage });
+app.use('/uploads', express.static(uploadDir));
+
+// API: Upload image
+app.post('/api/upload', upload.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    res.json({ url: `/uploads/${req.file.filename}` });
+});
 
 // API: Lấy danh sách danh mục
 app.get('/api/categories', (req, res) => {
@@ -48,11 +73,25 @@ app.delete('/api/categories/:id', (req, res) => {
 
 // API: Thêm sản phẩm
 app.post('/api/products', (req, res) => {
-    const { category_id, name, price } = req.body;
+    const { category_id, name, price, image, status, options } = req.body;
     const newId = db.data.products.length > 0 ? Math.max(...db.data.products.map(p => p.id)) + 1 : 1;
-    db.data.products.push({ id: newId, category_id: Number(category_id), name, price: Number(price) });
+    db.data.products.push({ id: newId, category_id: Number(category_id), name, price: Number(price), image: image || '', status: status || 'active', options: options || [] });
     db.saveDB();
     res.json({ success: true });
+});
+
+// API: Cập nhật sản phẩm
+app.put('/api/products/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const { category_id, name, price, image, status, options } = req.body;
+    const index = db.data.products.findIndex(p => p.id === id);
+    if (index !== -1) {
+        db.data.products[index] = { ...db.data.products[index], category_id: Number(category_id), name, price: Number(price), image, status, options };
+        db.saveDB();
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: "Product not found" });
+    }
 });
 
 // API: Xóa sản phẩm
@@ -80,7 +119,7 @@ app.post('/api/login', (req, res) => {
 
 // API: Tạo đơn hàng & In bill
 app.post('/api/orders', async (req, res) => {
-    const { total_amount, items, printerType } = req.body;
+    const { total_amount, items, printerType, user_id } = req.body;
     if (!items || items.length === 0) return res.status(400).json({ error: "Giỏ hàng rỗng" });
 
     try {
@@ -88,6 +127,7 @@ app.post('/api/orders', async (req, res) => {
         
         db.data.orders.push({
             id: orderId,
+            user_id: user_id || null,
             total_amount,
             created_at: new Date().toISOString()
         });
@@ -99,7 +139,8 @@ app.post('/api/orders', async (req, res) => {
                 order_id: orderId,
                 product_id: item.id,
                 quantity: item.quantity,
-                price: item.price
+                price: item.price,
+                selected_options: item.selected_options || []
             });
         });
 
@@ -174,6 +215,32 @@ app.get('/api/reports/daily', (req, res) => {
         });
         const result = Object.values(report).sort((a, b) => b.date.localeCompare(a.date));
         res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// API: Báo cáo chi tiết đơn hàng
+app.get('/api/reports/orders', (req, res) => {
+    try {
+        const ordersWithDetails = db.data.orders.map(order => {
+            const user = db.data.users.find(u => u.id === order.user_id) || { username: 'Unknown' };
+            const items = db.data.order_items.filter(oi => oi.order_id === order.id).map(oi => {
+                const product = db.data.products.find(p => p.id === oi.product_id) || { name: 'Unknown' };
+                return {
+                    ...oi,
+                    product_name: product.name
+                };
+            });
+            const total_quantity = items.reduce((sum, item) => sum + item.quantity, 0);
+            return {
+                ...order,
+                username: user.username,
+                items,
+                total_quantity
+            };
+        }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        res.json(ordersWithDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
