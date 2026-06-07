@@ -514,6 +514,19 @@ app.get('/api/reports/orders', (req, res) => {
     }
 });
 
+// Phục vụ file tĩnh của Frontend nếu thư mục public tồn tại (Môi trường PRD)
+const publicDir = path.join(__dirname, 'public');
+if (fs.existsSync(publicDir)) {
+    app.use(express.static(publicDir));
+    app.get('*', (req, res, next) => {
+        // Bỏ qua các route API
+        if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+            return next();
+        }
+        res.sendFile(path.join(publicDir, 'index.html'));
+    });
+}
+
 app.listen(port, () => {
     console.log(`Backend đang chạy tại http://localhost:${port}`);
 });
