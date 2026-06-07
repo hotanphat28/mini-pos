@@ -34,7 +34,7 @@ if exist backend\data-dev\license.key (
     copy /y backend\data-dev\license.key "%TARGET%\data\license.key" > nul
     echo   - Da cap nhat license.key
 ) else (
-    echo   - Khong tim thay license.key moi (Giu nguyen ban quyen cu).
+    echo   - Khong tim thay license.key moi [Giu nguyen ban quyen cu].
 )
 
 :: 5. Copy Frontend Dist va Script Khoi Dong
