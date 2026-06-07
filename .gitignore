@@ -10,6 +10,7 @@ build/
 # Database directories (Do not commit actual database files)
 backend/data/
 backend/data-dev/*.json
+backend/data-dev/*.key
 
 # Logs
 logs
