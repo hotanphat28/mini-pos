@@ -8,7 +8,7 @@ dist/
 build/
 
 # Database directories (Do not commit actual database files)
-backend/data/*.json
+backend/data/
 backend/data-dev/*.json
 
 # Logs

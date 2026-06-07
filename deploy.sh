@@ -35,8 +35,8 @@ fi
 # 4. Copy config PRD nếu có
 echo "[3/4] Đang áp dụng cấu hình gói tính năng..."
 mkdir -p "$TARGET/data"
-if [ -f "backend/data/features.json" ]; then
-    cp backend/data/features.json "$TARGET/data/features.json"
+if [ -f "backend/data-dev/features.json" ]; then
+    cp backend/data-dev/features.json "$TARGET/data/features.json"
     echo "  - Đã cập nhật features.json"
 else
     echo "  - Không có thay đổi features.json"

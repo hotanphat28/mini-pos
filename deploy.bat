@@ -30,8 +30,8 @@ xcopy /s /y /i backend\* "%TARGET%\" /exclude:deploy-exclude.txt > nul
 :: 4. Copy config PRD neu co
 echo [3/4] Dang ap dung cau hinh go'i tinh nang...
 if not exist "%TARGET%\data" mkdir "%TARGET%\data"
-if exist backend\data\features.json (
-    copy /y backend\data\features.json "%TARGET%\data\features.json" > nul
+if exist backend\data-dev\features.json (
+    copy /y backend\data-dev\features.json "%TARGET%\data\features.json" > nul
     echo   - Da cap nhat features.json
 ) else (
     echo   - Khong co thay doi features.json
