@@ -530,6 +530,33 @@ if (fs.existsSync(publicDir)) {
 
 function getLocalIP() {
     const interfaces = os.networkInterfaces();
+    let fallbackIp = '192.168.x.x';
+
+    for (const devName in interfaces) {
+        const lowerName = devName.toLowerCase();
+        // Bỏ qua các mạng ảo (Virtual, vEthernet, VMware, VirtualBox, Docker...)
+        if (lowerName.includes('virtual') || lowerName.includes('vethernet') || 
+            lowerName.includes('vmware') || lowerName.includes('docker') || lowerName.includes('wsl')) {
+            continue;
+        }
+
+        const iface = interfaces[devName];
+        for (let i = 0; i < iface.length; i++) {
+            const alias = iface[i];
+            if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
+                fallbackIp = alias.address;
+                // Nếu tên card mạng có chứa wifi, wlan hoặc ethernet thì tỉ lệ cao là card thật, ưu tiên lấy ngay
+                if (lowerName.includes('wi-fi') || lowerName.includes('wlan') || lowerName.includes('ethernet')) {
+                    return alias.address;
+                }
+            }
+        }
+    }
+
+    // Nếu vẫn không tìm được card vật lý rõ ràng, trả về IP khả dĩ nhất tìm được
+    if (fallbackIp !== '192.168.x.x') return fallbackIp;
+
+    // Quét vét cạn nếu tất cả các filter trên đều trượt
     for (const devName in interfaces) {
         const iface = interfaces[devName];
         for (let i = 0; i < iface.length; i++) {
@@ -539,7 +566,8 @@ function getLocalIP() {
             }
         }
     }
-    return '192.168.x.x';
+    
+    return fallbackIp;
 }
 
 app.listen(port, () => {
