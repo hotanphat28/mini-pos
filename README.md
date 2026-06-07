@@ -29,7 +29,8 @@ Dùng script này để Build và Đóng gói phần mềm sang một thư mục
 - Tại thư mục đích (VD: `C:\MiniPOS`), khách hàng chỉ cần click chạy file `start.bat`. Hệ thống sẽ tối ưu khởi chạy **1 Server duy nhất** (cổng 3001) phục vụ cả giao diện UI và API!
 
 Mặc định ở PRD:
-- Cả Backend và Frontend cùng chạy chung tại: `http://localhost:3001` (Có thể truy cập qua địa chỉ IP LAN để dùng trên điện thoại).
+- Máy tính thu ngân: Truy cập `http://localhost:3001`.
+- Thiết bị điện thoại/tablet: Nhập địa chỉ mạng (Ví dụ: `http://192.168.1.X:3001`). Hệ thống sẽ **tự động quét và hiển thị** chính xác địa chỉ IP này trên màn hình đen mỗi khi bạn chạy file `start.bat`.
 
 ## Tài khoản mặc định
 - **Admin**: `admin` / pass: `admin123`
