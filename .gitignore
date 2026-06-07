@@ -7,8 +7,9 @@ node_modules/
 dist/
 build/
 
-# Database file (Do not commit production database)
-backend/pos_db.json
+# Database directories (Do not commit actual database files)
+backend/data/*.json
+backend/data-dev/*.json
 
 # Logs
 logs
