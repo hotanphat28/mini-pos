@@ -1,37 +1,55 @@
 const fs = require('fs');
 const path = require('path');
 
-const dbPath = path.resolve(__dirname, 'pos_db.json');
+const dataDir = path.resolve(__dirname, 'data');
 
-let data = {
-    users: [],
-    categories: [],
-    products: [],
-    orders: [],
-    order_items: []
-};
-
-// Khởi tạo DB nếu chưa có
-if (fs.existsSync(dbPath)) {
-    data = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-} else {
-    data.users.push({ id: 1, username: 'admin', password: 'admin123', role: 'admin' });
-    for (let i = 1; i <= 5; i++) {
-        data.users.push({ id: i + 1, username: `user${i}`, password: 'user123', role: 'user' });
-    }
-    
-    data.categories.push({ id: 1, name: 'Cà Phê' });
-    data.categories.push({ id: 2, name: 'Trà Sữa' });
-    
-    data.products.push({ id: 1, category_id: 1, name: 'Cà Phê Đen', price: 15000 });
-    data.products.push({ id: 2, category_id: 1, name: 'Cà Phê Sữa', price: 20000 });
-    data.products.push({ id: 3, category_id: 2, name: 'Trà Sữa Trân Châu', price: 25000 });
-    
-    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir);
 }
 
-function saveDB() {
-    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+const collections = ['users', 'categories', 'products', 'orders', 'order_items', 'features', 'shifts', 'tables', 'materials', 'recipes', 'customers', 'vouchers'];
+let data = {};
+
+// Khởi tạo DB
+collections.forEach(col => {
+    const filePath = path.join(dataDir, `${col}.json`);
+    if (fs.existsSync(filePath)) {
+        data[col] = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } else {
+        data[col] = [];
+        // Default initial data for some collections if missing
+        if (col === 'features') {
+            data[col] = {
+                ENABLE_TABLE_MANAGEMENT: true,
+                ENABLE_SHIFT_MANAGEMENT: true,
+                ENABLE_PAYMENT_METHODS: true,
+                ENABLE_INVENTORY: true,
+                ENABLE_LOYALTY: true,
+                ENABLE_PROMOTIONS: true
+            };
+        } else if (col === 'users') {
+            data[col].push({ id: 1, username: 'admin', password: 'admin123', role: 'admin' });
+            for (let i = 1; i <= 5; i++) {
+                data[col].push({ id: i + 1, username: `user${i}`, password: 'user123', role: 'user' });
+            }
+        }
+        fs.writeFileSync(filePath, JSON.stringify(data[col], null, 2));
+    }
+});
+
+function saveDB(collectionName) {
+    if (collectionName && data[collectionName]) {
+        const filePath = path.join(dataDir, `${collectionName}.json`);
+        fs.writeFileSync(filePath, JSON.stringify(data[collectionName], null, 2));
+    } else {
+        // Save all
+        collections.forEach(col => {
+            if (data[col] !== undefined) {
+                const filePath = path.join(dataDir, `${col}.json`);
+                fs.writeFileSync(filePath, JSON.stringify(data[col], null, 2));
+            }
+        });
+    }
 }
 
 module.exports = {

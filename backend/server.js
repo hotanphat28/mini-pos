@@ -102,6 +102,191 @@ app.delete('/api/products/:id', (req, res) => {
     res.json({ success: true });
 });
 
+// API: Nguyên vật liệu (Materials)
+app.get('/api/materials', (req, res) => {
+    res.json(db.data.materials || []);
+});
+app.post('/api/materials', (req, res) => {
+    const { name, unit, stock } = req.body;
+    const newId = db.data.materials.length > 0 ? Math.max(...db.data.materials.map(m => m.id)) + 1 : 1;
+    db.data.materials.push({ id: newId, name, unit, stock: Number(stock) });
+    db.saveDB('materials');
+    res.json({ success: true });
+});
+app.put('/api/materials/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const { name, unit, stock } = req.body;
+    const mat = db.data.materials.find(m => m.id === id);
+    if (mat) {
+        if (name) mat.name = name;
+        if (unit) mat.unit = unit;
+        if (stock !== undefined) mat.stock = Number(stock);
+        db.saveDB('materials');
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: "Material not found" });
+    }
+});
+
+// API: Định lượng (Recipes)
+app.get('/api/recipes', (req, res) => {
+    res.json(db.data.recipes || []);
+});
+app.post('/api/recipes', (req, res) => {
+    const { product_id, ingredients } = req.body;
+    db.data.recipes = db.data.recipes.filter(r => r.product_id !== Number(product_id));
+    db.data.recipes.push({ product_id: Number(product_id), ingredients });
+    db.saveDB('recipes');
+    res.json({ success: true });
+});
+
+// API: Khách hàng (Customers)
+app.get('/api/customers', (req, res) => {
+    res.json(db.data.customers || []);
+});
+app.post('/api/customers', (req, res) => {
+    const { phone, name } = req.body;
+    const existing = db.data.customers.find(c => c.phone === phone);
+    if (existing) return res.status(400).json({ error: "Số điện thoại đã tồn tại" });
+    const newId = db.data.customers.length > 0 ? Math.max(...db.data.customers.map(c => c.id)) + 1 : 1;
+    const newCustomer = { id: newId, phone, name, points: 0, created_at: new Date().toISOString() };
+    db.data.customers.push(newCustomer);
+    db.saveDB('customers');
+    res.json({ success: true, customer: newCustomer });
+});
+app.put('/api/customers/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const { name, phone, points } = req.body;
+    const customer = db.data.customers.find(c => c.id === id);
+    if (customer) {
+        if (name) customer.name = name;
+        if (phone) customer.phone = phone;
+        if (points !== undefined) customer.points = Number(points);
+        db.saveDB('customers');
+        res.json({ success: true, customer });
+    } else {
+        res.status(404).json({ error: "Không tìm thấy khách hàng" });
+    }
+});
+
+// API: Khuyến mãi (Vouchers)
+app.get('/api/vouchers', (req, res) => {
+    res.json(db.data.vouchers || []);
+});
+app.post('/api/vouchers', (req, res) => {
+    const { code, type, value, min_order_value } = req.body;
+    const newId = db.data.vouchers.length > 0 ? Math.max(...db.data.vouchers.map(v => v.id)) + 1 : 1;
+    db.data.vouchers.push({ id: newId, code: code.toUpperCase(), type, value: Number(value), min_order_value: Number(min_order_value), is_active: true });
+    db.saveDB('vouchers');
+    res.json({ success: true });
+});
+app.put('/api/vouchers/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const { is_active } = req.body;
+    const voucher = db.data.vouchers.find(v => v.id === id);
+    if (voucher) {
+        voucher.is_active = is_active;
+        db.saveDB('vouchers');
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: "Không tìm thấy voucher" });
+    }
+});
+
+// API: Lấy Feature Flags
+app.get('/api/features', (req, res) => {
+    try {
+        res.json(db.data.features || {});
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// API: Lấy danh sách bàn
+app.get('/api/tables', (req, res) => {
+    try {
+        res.json(db.data.tables || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// API: Thêm bàn
+app.post('/api/tables', (req, res) => {
+    const { name } = req.body;
+    const newId = db.data.tables.length > 0 ? Math.max(...db.data.tables.map(t => t.id)) + 1 : 1;
+    db.data.tables.push({ id: newId, name, status: 'available', current_order_id: null });
+    db.saveDB('tables');
+    res.json({ success: true });
+});
+
+// API: Đổi trạng thái bàn
+app.put('/api/tables/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const { status, current_order_id } = req.body;
+    const table = db.data.tables.find(t => t.id === id);
+    if (table) {
+        table.status = status;
+        table.current_order_id = current_order_id;
+        db.saveDB('tables');
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: 'Table not found' });
+    }
+});
+
+// API: Ca làm việc hiện tại
+app.get('/api/shifts/current', (req, res) => {
+    try {
+        const currentShift = db.data.shifts.find(s => !s.end_time);
+        res.json(currentShift || null);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// API: Mở ca
+app.post('/api/shifts/open', (req, res) => {
+    const { start_cash, user_id } = req.body;
+    const currentShift = db.data.shifts.find(s => !s.end_time);
+    if (currentShift) return res.status(400).json({ error: 'Đã có ca đang mở' });
+
+    const newId = db.data.shifts.length > 0 ? Math.max(...db.data.shifts.map(s => s.id)) + 1 : 1;
+    const newShift = {
+        id: newId,
+        user_id,
+        start_time: new Date().toISOString(),
+        start_cash: Number(start_cash),
+        end_time: null,
+        end_cash: null,
+        total_revenue: 0,
+        cash_revenue: 0,
+        transfer_revenue: 0
+    };
+    db.data.shifts.push(newShift);
+    db.saveDB('shifts');
+    res.json({ success: true, shift: newShift });
+});
+
+// API: Đóng ca
+app.post('/api/shifts/close', (req, res) => {
+    const { end_cash } = req.body;
+    const currentShift = db.data.shifts.find(s => !s.end_time);
+    if (!currentShift) return res.status(400).json({ error: 'Không có ca nào đang mở' });
+
+    // Tính toán doanh thu trong ca
+    const shiftOrders = db.data.orders.filter(o => o.created_at >= currentShift.start_time);
+    
+    currentShift.end_time = new Date().toISOString();
+    currentShift.end_cash = Number(end_cash);
+    currentShift.total_revenue = shiftOrders.reduce((sum, o) => sum + o.total_amount, 0);
+    currentShift.cash_revenue = shiftOrders.filter(o => o.payment_method === 'cash').reduce((sum, o) => sum + o.total_amount, 0);
+    currentShift.transfer_revenue = shiftOrders.filter(o => o.payment_method === 'transfer').reduce((sum, o) => sum + o.total_amount, 0);
+
+    db.saveDB('shifts');
+    res.json({ success: true, shift: currentShift });
+});
+
 // API: Đăng nhập
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
@@ -119,7 +304,7 @@ app.post('/api/login', (req, res) => {
 
 // API: Tạo đơn hàng & In bill
 app.post('/api/orders', async (req, res) => {
-    const { total_amount, items, printerType, user_id } = req.body;
+    const { items, printerType, user_id, payment_method, table_id, customer_id, used_points, voucher_code, subtotal, discount_amount, total_amount } = req.body;
     if (!items || items.length === 0) return res.status(400).json({ error: "Giỏ hàng rỗng" });
 
     try {
@@ -128,7 +313,14 @@ app.post('/api/orders', async (req, res) => {
         db.data.orders.push({
             id: orderId,
             user_id: user_id || null,
-            total_amount,
+            table_id: table_id || null,
+            customer_id: customer_id || null,
+            payment_method: payment_method || 'cash',
+            subtotal: subtotal || total_amount,
+            discount_amount: discount_amount || 0,
+            total_amount: total_amount,
+            voucher_code: voucher_code || null,
+            used_points: used_points || 0,
             created_at: new Date().toISOString()
         });
 
@@ -144,7 +336,83 @@ app.post('/api/orders', async (req, res) => {
             });
         });
 
-        db.saveDB();
+        db.saveDB('orders');
+        db.saveDB('order_items');
+
+        // Khách hàng & Loyalty (Cộng / Trừ điểm)
+        if (db.data.features?.ENABLE_LOYALTY && customer_id) {
+            const customer = db.data.customers.find(c => c.id === customer_id);
+            if (customer) {
+                if (used_points) {
+                    customer.points -= Number(used_points);
+                }
+                const earned_points = Math.floor(total_amount / 10000); // 10k = 1 điểm
+                customer.points += earned_points;
+                db.saveDB('customers');
+            }
+        }
+
+        // Trừ kho nguyên liệu (Inventory Deduction)
+        if (db.data.features?.ENABLE_INVENTORY) {
+            items.forEach(item => {
+                const recipe = (db.data.recipes || []).find(r => r.product_id === item.id);
+                if (recipe && recipe.ingredients) {
+                    recipe.ingredients.forEach(ing => {
+                        const mat = (db.data.materials || []).find(m => m.id === ing.material_id);
+                        if (mat) {
+                            mat.stock -= (ing.quantity * item.quantity);
+                        }
+                    });
+                }
+            });
+            db.saveDB('materials');
+        }
+
+        // Nếu đơn hàng gắn với bàn, cập nhật trạng thái bàn thành trống
+        if (table_id) {
+            const table = db.data.tables.find(t => t.id === table_id);
+            if (table) {
+                table.status = 'available';
+                table.current_order_id = null;
+                db.saveDB('tables');
+            }
+        }
+
+        // --- MÔ PHỎNG IN ẤN THEO YÊU CẦU ---
+        // Phân tách Thức uống (Tem dán) và Thức ăn (Phiếu bếp)
+        const drinks = [];
+        const foods = [];
+        items.forEach(item => {
+            const product = db.data.products.find(p => p.id === item.id);
+            const category = db.data.categories.find(c => c.id === product?.category_id);
+            if (category && category.name.toLowerCase().includes('thức ăn')) {
+                foods.push(item);
+            } else {
+                drinks.push(item);
+            }
+        });
+
+        // 1. In Bill chính tại quầy
+        console.log(`[PRINTER] In Bill Thu Ngân cho đơn #${orderId}`);
+        // printReceipt(orderId, items, total_amount, printerType);
+
+        // 2. In Tem dán ly cho Thức uống (Mang đi / Tại bàn đều cần tem dán ly)
+        drinks.forEach(drink => {
+            for(let i=0; i < drink.quantity; i++) {
+                console.log(`[PRINTER] In Tem Dán Ly: ${drink.name} ${drink.selected_options.length > 0 ? '(' + drink.selected_options.map(o=>o.name).join(',') + ')' : ''}`);
+                // printSticker(drink);
+            }
+        });
+
+        // 3. In Phiếu Chế Biến (Bếp) cho Thức ăn
+        if (foods.length > 0) {
+            console.log(`[PRINTER] In Phiếu Chế Biến Bếp cho đơn #${orderId}`);
+            foods.forEach(food => {
+                console.log(`   - ${food.name} x${food.quantity}`);
+            });
+            // printKitchenTicket(orderId, foods, table_id);
+        }
+        // ------------------------------------
 
         // Mô phỏng quá trình in bill
         // printReceipt(orderId, items, total_amount, printerType);

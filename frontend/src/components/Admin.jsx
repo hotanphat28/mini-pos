@@ -1,17 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ArrowLeft, Plus, Trash2, TrendingUp, Package, Tag, Edit2, CheckCircle, XCircle, Image as ImageIcon, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, TrendingUp, Package, Tag, Edit2, CheckCircle, XCircle, Image as ImageIcon, X, Archive, Database, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const API_URL = `http://${window.location.hostname}:3001/api`;
 
-function Admin({ user, onLogout }) {
+function Admin({ user, features, onLogout }) {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('reports'); // reports, menu
+  const [activeTab, setActiveTab] = useState('reports'); // reports, menu, inventory
   
   const [orders, setOrders] = useState([]);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  
+  // Phase 3 State
+  const [customers, setCustomers] = useState([]);
+  const [vouchers, setVouchers] = useState([]);
+  const [editingCustomer, setEditingCustomer] = useState({ id: null, phone: '', name: '', points: 0 });
+  const [editingVoucher, setEditingVoucher] = useState({ id: null, code: '', type: 'percent', value: '', min_order_value: '' });
+  
+  // Inventory State
+  const [materials, setMaterials] = useState([]);
+  const [recipes, setRecipes] = useState([]);
+  const [editingMaterial, setEditingMaterial] = useState({ id: null, name: '', unit: '', stock: '' });
+  const [selectedProductForRecipe, setSelectedProductForRecipe] = useState('');
+  const [currentRecipe, setCurrentRecipe] = useState([]);
+  const [newIngredient, setNewIngredient] = useState({ material_id: '', quantity: '' });
 
   const initialProductState = { id: null, name: '', price: '', category_id: '', image: '', status: 'active', options: [] };
   const [editingProduct, setEditingProduct] = useState(initialProductState);
@@ -27,17 +41,29 @@ function Admin({ user, onLogout }) {
   }, []);
 
   const fetchData = async () => {
-    const [ordRes, catRes, prodRes] = await Promise.all([
-      axios.get(`${API_URL}/reports/orders`),
-      axios.get(`${API_URL}/categories`),
-      axios.get(`${API_URL}/products`)
-    ]);
-    setOrders(ordRes.data);
-    setCategories(catRes.data);
-    setProducts(prodRes.data);
-    
-    if (catRes.data.length > 0 && !editingProduct.category_id && !isEditing) {
-        setEditingProduct(prev => ({...prev, category_id: catRes.data[0].id}));
+    try {
+      const [ordRes, catRes, prodRes, matRes, recRes, custRes, vouchRes] = await Promise.all([
+        axios.get(`${API_URL}/reports/orders`),
+        axios.get(`${API_URL}/categories`),
+        axios.get(`${API_URL}/products`),
+        axios.get(`${API_URL}/materials`),
+        axios.get(`${API_URL}/recipes`),
+        axios.get(`${API_URL}/customers`),
+        axios.get(`${API_URL}/vouchers`)
+      ]);
+      setOrders(ordRes.data);
+      setCategories(catRes.data);
+      setProducts(prodRes.data);
+      setMaterials(matRes.data);
+      setRecipes(recRes.data);
+      setCustomers(custRes.data);
+      setVouchers(vouchRes.data);
+      
+      if (catRes.data.length > 0 && !editingProduct.category_id && !isEditing) {
+          setEditingProduct(prev => ({...prev, category_id: catRes.data[0].id}));
+      }
+    } catch(err) {
+      console.error("Lỗi fetch data Admin:", err);
     }
   };
 
@@ -125,10 +151,89 @@ function Admin({ user, onLogout }) {
     setNewOptionPrice('');
   };
 
-  // Determine if selected category is "Thức ăn" (id = 2 typically, but we check name just in case)
   const isFoodCategory = () => {
     const cat = categories.find(c => c.id === Number(editingProduct.category_id));
     return cat && cat.name.toLowerCase().includes('thức ăn');
+  };
+
+  // ---- PHASE 3 LOGIC ----
+  const handleSubmitCustomer = async (e) => {
+    e.preventDefault();
+    if (!editingCustomer.phone || !editingCustomer.name) return;
+    try {
+      if (editingCustomer.id) {
+        await axios.put(`${API_URL}/customers/${editingCustomer.id}`, editingCustomer);
+      } else {
+        await axios.post(`${API_URL}/customers`, editingCustomer);
+      }
+      setEditingCustomer({ id: null, phone: '', name: '', points: 0 });
+      fetchData();
+    } catch(err) {
+      alert(err.response?.data?.error || "Lỗi lưu khách hàng");
+    }
+  };
+
+  const handleSubmitVoucher = async (e) => {
+    e.preventDefault();
+    if (!editingVoucher.code || !editingVoucher.value) return;
+    try {
+      await axios.post(`${API_URL}/vouchers`, editingVoucher);
+      setEditingVoucher({ id: null, code: '', type: 'percent', value: '', min_order_value: '' });
+      fetchData();
+    } catch(err) {
+      alert("Lỗi lưu voucher");
+    }
+  };
+
+  const toggleVoucherActive = async (v) => {
+    await axios.put(`${API_URL}/vouchers/${v.id}`, { is_active: !v.is_active });
+    fetchData();
+  };
+
+  // ---- INVENTORY LOGIC ----
+  const handleSubmitMaterial = async (e) => {
+    e.preventDefault();
+    if (!editingMaterial.name || !editingMaterial.unit || editingMaterial.stock === '') return;
+    if (editingMaterial.id) {
+      await axios.put(`${API_URL}/materials/${editingMaterial.id}`, editingMaterial);
+    } else {
+      await axios.post(`${API_URL}/materials`, editingMaterial);
+    }
+    setEditingMaterial({ id: null, name: '', unit: '', stock: '' });
+    fetchData();
+  };
+
+  const handleSelectProductForRecipe = (productId) => {
+    setSelectedProductForRecipe(productId);
+    const existingRecipe = recipes.find(r => r.product_id === Number(productId));
+    if (existingRecipe) {
+      setCurrentRecipe(existingRecipe.ingredients);
+    } else {
+      setCurrentRecipe([]);
+    }
+  };
+
+  const handleAddIngredient = () => {
+    if (!newIngredient.material_id || !newIngredient.quantity) return;
+    setCurrentRecipe([...currentRecipe, { 
+      material_id: Number(newIngredient.material_id), 
+      quantity: Number(newIngredient.quantity) 
+    }]);
+    setNewIngredient({ material_id: '', quantity: '' });
+  };
+
+  const handleRemoveIngredient = (index) => {
+    setCurrentRecipe(currentRecipe.filter((_, i) => i !== index));
+  };
+
+  const handleSaveRecipe = async () => {
+    if (!selectedProductForRecipe) return;
+    await axios.post(`${API_URL}/recipes`, { 
+      product_id: selectedProductForRecipe, 
+      ingredients: currentRecipe 
+    });
+    alert("Lưu định lượng thành công!");
+    fetchData();
   };
 
   return (
@@ -139,7 +244,7 @@ function Admin({ user, onLogout }) {
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
               <TrendingUp className="text-blue-500" /> Admin Dashboard
             </h1>
-            <p className="text-gray-500 mt-1">Quản lý doanh thu và thực đơn</p>
+            <p className="text-gray-500 mt-1">Quản lý doanh thu, thực đơn {features?.ENABLE_INVENTORY ? 'và kho hàng' : ''}</p>
           </div>
           <div className="flex gap-4">
             <button onClick={() => navigate('/pos')} className="flex items-center gap-2 bg-white border px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 font-semibold text-gray-700">
@@ -148,13 +253,28 @@ function Admin({ user, onLogout }) {
           </div>
         </header>
 
-        <div className="flex gap-6 mb-6 border-b pb-4">
-          <button onClick={() => setActiveTab('reports')} className={`px-6 py-3 rounded-lg font-semibold transition ${activeTab === 'reports' ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border'}`}>
+        <div className="flex gap-4 mb-6 border-b pb-4 overflow-x-auto">
+          <button onClick={() => setActiveTab('reports')} className={`px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'reports' ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border'}`}>
             Báo cáo chi tiết đơn hàng
           </button>
-          <button onClick={() => setActiveTab('menu')} className={`px-6 py-3 rounded-lg font-semibold transition ${activeTab === 'menu' ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border'}`}>
+          <button onClick={() => setActiveTab('menu')} className={`px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'menu' ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border'}`}>
             Quản lý Thực đơn
           </button>
+          {features?.ENABLE_INVENTORY && (
+            <button onClick={() => setActiveTab('inventory')} className={`px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'inventory' ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border'}`}>
+              Quản lý Kho
+            </button>
+          )}
+          {features?.ENABLE_LOYALTY && (
+            <button onClick={() => setActiveTab('customers')} className={`px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'customers' ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border'}`}>
+              Khách hàng
+            </button>
+          )}
+          {features?.ENABLE_PROMOTIONS && (
+            <button onClick={() => setActiveTab('vouchers')} className={`px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'vouchers' ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border'}`}>
+              Khuyến mãi (Voucher)
+            </button>
+          )}
         </div>
 
         {activeTab === 'reports' && (
@@ -185,8 +305,8 @@ function Admin({ user, onLogout }) {
                         <div className="hidden group-hover:block absolute right-0 z-10 w-72 bg-white border shadow-xl rounded-lg p-4 mt-2">
                           <h4 className="font-bold border-b pb-2 mb-2">Chi tiết đơn #{order.id}</h4>
                           <ul className="space-y-2 max-h-48 overflow-y-auto">
-                            {order.items.map(item => (
-                              <li key={item.id} className="text-sm">
+                            {order.items.map((item, idx) => (
+                              <li key={idx} className="text-sm">
                                 <div className="flex justify-between font-semibold">
                                   <span>{item.product_name} x{item.quantity}</span>
                                   <span>{(item.price * item.quantity).toLocaleString()}đ</span>
@@ -279,7 +399,6 @@ function Admin({ user, onLogout }) {
                 {isFoodCategory() && (
                   <div className="border p-4 rounded bg-orange-50 border-orange-100">
                     <h3 className="font-bold text-orange-800 text-sm mb-3">Tùy chọn cho thức ăn</h3>
-                    
                     <ul className="mb-3 space-y-2">
                       {editingProduct.options.map((opt, i) => (
                         <li key={i} className="flex justify-between items-center bg-white p-2 border rounded text-sm">
@@ -288,7 +407,6 @@ function Admin({ user, onLogout }) {
                         </li>
                       ))}
                     </ul>
-
                     <div className="flex gap-2">
                       <input 
                         type="text" placeholder="Tên tùy chọn" 
@@ -321,7 +439,6 @@ function Admin({ user, onLogout }) {
             {/* Danh sách Sản phẩm */}
             <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border p-6">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Tag size={20}/> Danh sách thực đơn</h2>
-              
               <div className="space-y-6">
                 {categories.map(cat => (
                   <div key={cat.id}>
@@ -357,6 +474,240 @@ function Admin({ user, onLogout }) {
             </div>
           </div>
         )}
+
+        {activeTab === 'inventory' && features?.ENABLE_INVENTORY && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Cột 1: Danh sách & Nạp Nguyên vật liệu */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Database size={20}/> Danh sách Nguyên Vật Liệu</h2>
+              <form onSubmit={handleSubmitMaterial} className="flex gap-2 mb-6 bg-gray-50 p-3 rounded-lg border">
+                <input 
+                  type="text" placeholder="Tên NVL (VD: Đường)" required
+                  className="flex-1 border px-2 py-2 rounded text-sm"
+                  value={editingMaterial.name} onChange={e => setEditingMaterial({...editingMaterial, name: e.target.value})}
+                />
+                <input 
+                  type="text" placeholder="Đơn vị (g, ml...)" required
+                  className="w-24 border px-2 py-2 rounded text-sm"
+                  value={editingMaterial.unit} onChange={e => setEditingMaterial({...editingMaterial, unit: e.target.value})}
+                />
+                <input 
+                  type="number" placeholder="Tồn kho" required
+                  className="w-28 border px-2 py-2 rounded text-sm"
+                  value={editingMaterial.stock} onChange={e => setEditingMaterial({...editingMaterial, stock: e.target.value})}
+                />
+                <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-bold">Lưu</button>
+              </form>
+
+              <div className="overflow-y-auto max-h-96">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="p-2 rounded-tl">Tên NVL</th>
+                      <th className="p-2">Đơn vị</th>
+                      <th className="p-2">Tồn kho</th>
+                      <th className="p-2 rounded-tr text-center">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {materials.map(mat => (
+                      <tr key={mat.id} className="border-b hover:bg-gray-50">
+                        <td className="p-2 font-semibold text-gray-700">{mat.name}</td>
+                        <td className="p-2 text-gray-500">{mat.unit}</td>
+                        <td className={`p-2 font-bold ${mat.stock < 100 ? 'text-red-500' : 'text-green-600'}`}>{mat.stock.toLocaleString()}</td>
+                        <td className="p-2 text-center">
+                          <button onClick={() => setEditingMaterial(mat)} className="text-blue-500 hover:bg-blue-50 p-1 rounded"><Edit2 size={16}/></button>
+                        </td>
+                      </tr>
+                    ))}
+                    {materials.length === 0 && <tr><td colSpan="4" className="text-center p-4 text-gray-400">Chưa có nguyên vật liệu</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Cột 2: Thiết lập Định lượng (Recipes) */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Archive size={20}/> Thiết lập Định lượng (Recipe)</h2>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Chọn món để cài đặt công thức:</label>
+                <select 
+                  className="w-full border px-3 py-2 rounded focus:ring focus:ring-blue-200"
+                  value={selectedProductForRecipe}
+                  onChange={(e) => handleSelectProductForRecipe(e.target.value)}
+                >
+                  <option value="">-- Chọn món --</option>
+                  {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+
+              {selectedProductForRecipe && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                  <h3 className="font-bold text-blue-800 mb-3">Thành phần cấu tạo món:</h3>
+                  <ul className="mb-4 space-y-2">
+                    {currentRecipe.map((ing, i) => {
+                      const mat = materials.find(m => m.id === ing.material_id);
+                      return (
+                        <li key={i} className="flex justify-between items-center bg-white p-2 border rounded shadow-sm">
+                          <span className="font-semibold text-gray-700">{mat ? mat.name : 'Unknown'}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-blue-600 font-bold">{ing.quantity} {mat?.unit}</span>
+                            <button onClick={() => handleRemoveIngredient(i)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X size={16}/></button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                    {currentRecipe.length === 0 && <div className="text-sm text-gray-500 italic">Món này chưa thiết lập nguyên liệu.</div>}
+                  </ul>
+
+                  <div className="flex gap-2 mt-4 pt-4 border-t border-blue-200">
+                    <select 
+                      className="flex-1 border px-2 py-2 rounded text-sm"
+                      value={newIngredient.material_id} onChange={e => setNewIngredient({...newIngredient, material_id: e.target.value})}
+                    >
+                      <option value="">-- Chọn NVL --</option>
+                      {materials.map(m => <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>)}
+                    </select>
+                    <input 
+                      type="number" placeholder="Số lượng" 
+                      className="w-24 border px-2 py-2 rounded text-sm"
+                      value={newIngredient.quantity} onChange={e => setNewIngredient({...newIngredient, quantity: e.target.value})}
+                    />
+                    <button onClick={handleAddIngredient} className="bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600"><Plus size={18}/></button>
+                  </div>
+
+                  <button 
+                    onClick={handleSaveRecipe}
+                    className="w-full mt-4 bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 flex items-center justify-center gap-2 shadow-md"
+                  >
+                    <Save size={18}/> LƯU CÔNG THỨC
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'customers' && features?.ENABLE_LOYALTY && (
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <h2 className="text-xl font-bold mb-4">Danh sách Khách hàng thân thiết</h2>
+            <form onSubmit={handleSubmitCustomer} className="flex gap-2 mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <input 
+                type="text" placeholder="Số điện thoại" required
+                className="w-48 border px-3 py-2 rounded focus:ring"
+                value={editingCustomer.phone} onChange={e => setEditingCustomer({...editingCustomer, phone: e.target.value})}
+              />
+              <input 
+                type="text" placeholder="Tên khách hàng" required
+                className="flex-1 border px-3 py-2 rounded focus:ring"
+                value={editingCustomer.name} onChange={e => setEditingCustomer({...editingCustomer, name: e.target.value})}
+              />
+              {editingCustomer.id && (
+                <input 
+                  type="number" placeholder="Điểm" required
+                  className="w-24 border px-3 py-2 rounded focus:ring"
+                  value={editingCustomer.points} onChange={e => setEditingCustomer({...editingCustomer, points: e.target.value})}
+                />
+              )}
+              <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 font-bold">
+                {editingCustomer.id ? 'Cập nhật' : 'Thêm mới'}
+              </button>
+              {editingCustomer.id && (
+                <button type="button" onClick={() => setEditingCustomer({ id: null, phone: '', name: '', points: 0 })} className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">Hủy</button>
+              )}
+            </form>
+
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 border-b">Số điện thoại</th>
+                  <th className="p-3 border-b">Tên khách hàng</th>
+                  <th className="p-3 border-b">Điểm tích lũy</th>
+                  <th className="p-3 border-b text-center">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.map(c => (
+                  <tr key={c.id} className="hover:bg-gray-50 border-b">
+                    <td className="p-3 font-semibold text-gray-700">{c.phone}</td>
+                    <td className="p-3">{c.name}</td>
+                    <td className="p-3 font-bold text-orange-500">{c.points} đ</td>
+                    <td className="p-3 text-center">
+                      <button onClick={() => setEditingCustomer(c)} className="text-blue-500 hover:bg-blue-100 p-1.5 rounded"><Edit2 size={16}/></button>
+                    </td>
+                  </tr>
+                ))}
+                {customers.length === 0 && <tr><td colSpan="4" className="text-center p-4 text-gray-400">Chưa có khách hàng</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {activeTab === 'vouchers' && features?.ENABLE_PROMOTIONS && (
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <h2 className="text-xl font-bold mb-4">Quản lý Khuyến mãi (Vouchers)</h2>
+            <form onSubmit={handleSubmitVoucher} className="flex flex-wrap gap-3 mb-6 bg-green-50 p-4 rounded-lg border border-green-100">
+              <input 
+                type="text" placeholder="Mã (VD: SALE10)" required
+                className="w-40 border px-3 py-2 rounded focus:ring uppercase"
+                value={editingVoucher.code} onChange={e => setEditingVoucher({...editingVoucher, code: e.target.value.toUpperCase()})}
+              />
+              <select 
+                className="w-40 border px-3 py-2 rounded focus:ring"
+                value={editingVoucher.type} onChange={e => setEditingVoucher({...editingVoucher, type: e.target.value})}
+              >
+                <option value="percent">Giảm theo %</option>
+                <option value="fixed">Giảm tiền mặt</option>
+              </select>
+              <input 
+                type="number" placeholder={editingVoucher.type === 'percent' ? "Phần trăm (VD: 10)" : "Tiền mặt (VD: 20000)"} required
+                className="w-48 border px-3 py-2 rounded focus:ring"
+                value={editingVoucher.value} onChange={e => setEditingVoucher({...editingVoucher, value: e.target.value})}
+              />
+              <input 
+                type="number" placeholder="Đơn tối thiểu (VNĐ)" required
+                className="w-48 border px-3 py-2 rounded focus:ring"
+                value={editingVoucher.min_order_value} onChange={e => setEditingVoucher({...editingVoucher, min_order_value: e.target.value})}
+              />
+              <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 font-bold flex-shrink-0">
+                Tạo Voucher
+              </button>
+            </form>
+
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 border-b">Mã Voucher</th>
+                  <th className="p-3 border-b">Loại giảm</th>
+                  <th className="p-3 border-b">Mức giảm</th>
+                  <th className="p-3 border-b">Đơn tối thiểu</th>
+                  <th className="p-3 border-b text-center">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vouchers.map(v => (
+                  <tr key={v.id} className="hover:bg-gray-50 border-b">
+                    <td className="p-3 font-bold text-green-700">{v.code}</td>
+                    <td className="p-3">{v.type === 'percent' ? 'Phần trăm (%)' : 'Tiền mặt (VNĐ)'}</td>
+                    <td className="p-3 font-semibold text-gray-700">{v.type === 'percent' ? `${v.value}%` : `${v.value.toLocaleString()}đ`}</td>
+                    <td className="p-3">{v.min_order_value.toLocaleString()}đ</td>
+                    <td className="p-3 text-center">
+                      <button 
+                        onClick={() => toggleVoucherActive(v)}
+                        className={`px-3 py-1 rounded-full text-xs font-bold ${v.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                      >
+                        {v.is_active ? 'Đang hoạt động' : 'Đã khóa'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {vouchers.length === 0 && <tr><td colSpan="5" className="text-center p-4 text-gray-400">Chưa có voucher nào</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+
       </div>
     </div>
   );

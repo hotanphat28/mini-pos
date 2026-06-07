@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "user_id": 2,
+    "start_time": "2026-06-07T02:46:51.432Z",
+    "start_cash": 500000,
+    "end_time": "2026-06-07T02:47:29.264Z",
+    "end_cash": 565000,
+    "total_revenue": 65000,
+    "cash_revenue": 65000,
+    "transfer_revenue": 0
+  },
+  {
+    "id": 2,
+    "user_id": 2,
+    "start_time": "2026-06-07T03:06:19.710Z",
+    "start_cash": 500000,
+    "end_time": null,
+    "end_cash": null,
+    "total_revenue": 0,
+    "cash_revenue": 0,
+    "transfer_revenue": 0
+  }
+]
