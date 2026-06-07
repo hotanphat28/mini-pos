@@ -6,6 +6,7 @@ const PrinterTypes = require("node-thermal-printer").types;
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 const app = express();
 const port = 3001;
@@ -527,6 +528,30 @@ if (fs.existsSync(publicDir)) {
     });
 }
 
+function getLocalIP() {
+    const interfaces = os.networkInterfaces();
+    for (const devName in interfaces) {
+        const iface = interfaces[devName];
+        for (let i = 0; i < iface.length; i++) {
+            const alias = iface[i];
+            if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
+                return alias.address;
+            }
+        }
+    }
+    return '192.168.x.x';
+}
+
 app.listen(port, () => {
-    console.log(`Backend đang chạy tại http://localhost:${port}`);
+    const localIp = getLocalIP();
+    console.log('\n======================================================');
+    console.log('  🚀 HỆ THỐNG MINI POS ĐÃ KHỞI ĐỘNG THÀNH CÔNG!');
+    console.log('======================================================\n');
+    console.log('Mở trình duyệt và truy cập một trong các địa chỉ sau:\n');
+    console.log(`👉 Tại máy tính thu ngân (máy đang chạy app này):`);
+    console.log(`    http://localhost:${port}\n`);
+    console.log(`👉 Tại điện thoại / iPad / máy tính khác (dùng chung WiFi):`);
+    console.log(`    http://${localIp}:${port}\n`);
+    console.log('======================================================\n');
+    console.log('Nhấn Ctrl + C để tắt máy chủ.');
 });
