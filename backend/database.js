@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const dataDir = path.resolve(__dirname, 'data');
+const env = process.env.NODE_ENV || 'development';
+const dataDirName = env === 'production' ? 'data' : 'data-dev';
+const dataDir = path.resolve(__dirname, dataDirName);
 
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir);

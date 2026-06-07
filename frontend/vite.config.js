@@ -7,5 +7,9 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true // Cho phép truy cập qua LAN IP
+  },
+  preview: {
+    port: 3000,
+    host: true
   }
 })

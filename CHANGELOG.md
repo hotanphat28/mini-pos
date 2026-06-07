@@ -2,6 +2,14 @@
 
 Tất cả các thay đổi và cập nhật tính năng của dự án Mini POS sẽ được ghi chú tại đây. Dự án tuân theo tiêu chuẩn [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] - 2026-06-07
+
+### Đã thêm (Added)
+- **Môi trường Development & Production**: Tách bạch logic môi trường. Frontend ở PRD được build thành static files, frontend ở DEV hỗ trợ hot-reload.
+- **Bảo vệ dữ liệu**: Database của backend tự động trỏ đến `data-dev` ở chế độ DEV và `data` ở chế độ PRD.
+- **Hỗ trợ đa nền tảng**: Cung cấp đầy đủ các file `.bat` (Windows) và `.sh` (Mac/Linux) gồm: `start`/`start-dev` và công cụ dọn dẹp dữ liệu test `reset-dev`.
+
+
 ## [1.4.0] - 2026-06-07
 
 ### Đã thêm (Added)
