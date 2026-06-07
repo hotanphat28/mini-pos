@@ -2,6 +2,12 @@
 
 Tất cả các thay đổi và cập nhật tính năng của dự án Mini POS sẽ được ghi chú tại đây. Dự án tuân theo tiêu chuẩn [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] - 2026-06-07
+
+### Đã thêm (Added)
+- **Công cụ Cấu hình (Configurator Tool)**: Thêm các script `config.bat` (Windows) và `config.sh` (Mac/Linux) chạy bằng môi trường console (Node.js readline) giúp cài đặt nhanh các Feature Flags mà không cần sửa file JSON thủ công.
+- **Tùy chọn Bán theo Gói (Packages)**: Tích hợp sẵn 3 Gói (Basic, Pro, Premium) trong công cụ Cấu hình. Cho phép bật/tắt đồng loạt các tính năng phù hợp với từng Gói (ví dụ: gõ 'B' để chọn gói Basic) chỉ bằng một phím bấm.
+
 ## [1.5.0] - 2026-06-07
 
 ### Đã thêm (Added)

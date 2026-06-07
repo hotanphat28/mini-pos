@@ -21,6 +21,12 @@ Chạy ứng dụng ở chế độ hỗ trợ chỉnh sửa và lưu trữ dữ
 - **Linux/Mac**: Cấp quyền và chạy `./start-dev.sh`.
 - **Dọn dẹp rác Test (Reset)**: Khi muốn "tẩy trắng" dữ liệu test, chỉ cần chạy `reset-dev.bat` (Windows) hoặc `./reset-dev.sh` (Linux/Mac). Lần khởi động Dev tiếp theo sẽ tự động có lại tài khoản gốc.
 
+### 3. Công cụ Cấu hình Gói (Configurator Tool)
+Hệ thống cho phép bật/tắt các module tính năng (Feature Flags) dễ dàng qua giao diện dòng lệnh thay vì sửa file code.
+- **Windows**: Click đúp vào file `config.bat`.
+- **Linux/Mac**: Cấp quyền và chạy `./config.sh`.
+- Tool cho phép chọn cấu hình riêng cho môi trường Thực tế hoặc Thử nghiệm, hỗ trợ gán nhanh theo 3 Gói cài sẵn: **BASIC** (Cơ bản), **PRO** (Chuyên nghiệp), **PREMIUM** (Toàn diện).
+
 Mặc định:
 - Backend chạy tại: `http://localhost:3001`
 - Frontend chạy tại: `http://localhost:3000` (Các thiết bị điện thoại/tablet kết nối chung Wi-Fi có thể truy cập qua địa chỉ IP LAN của máy chủ).
