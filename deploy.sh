@@ -32,14 +32,14 @@ else
     rm -rf "$TARGET/node_modules" "$TARGET/data" "$TARGET/data-dev" "$TARGET/uploads"
 fi
 
-# 4. Copy config PRD nếu có
-echo "[3/4] Đang áp dụng cấu hình gói tính năng..."
+# 4. Copy License PRD nếu có
+echo "[3/4] Đang áp dụng bản quyền (License Key)..."
 mkdir -p "$TARGET/data"
-if [ -f "backend/data-dev/features.json" ]; then
-    cp backend/data-dev/features.json "$TARGET/data/features.json"
-    echo "  - Đã cập nhật features.json"
+if [ -f "backend/data-dev/license.key" ]; then
+    cp backend/data-dev/license.key "$TARGET/data/license.key"
+    echo "  - Đã cập nhật license.key"
 else
-    echo "  - Không có thay đổi features.json"
+    echo "  - Không tìm thấy license.key mới (Giữ nguyên bản quyền cũ)."
 fi
 
 # 5. Copy Frontend Dist và Script Khởi động

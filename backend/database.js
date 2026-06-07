@@ -14,6 +14,24 @@ let data = {};
 
 // Khởi tạo DB
 collections.forEach(col => {
+    if (col === 'features' && env === 'production') {
+        const licensePath = path.join(dataDir, `license.key`);
+        if (fs.existsSync(licensePath)) {
+            try {
+                const b64 = fs.readFileSync(licensePath, 'utf8');
+                const jsonString = Buffer.from(b64, 'base64').toString('utf8');
+                data[col] = JSON.parse(jsonString);
+            } catch (err) {
+                console.error("LỖI: file license.key không hợp lệ.");
+                data[col] = {};
+            }
+        } else {
+            console.error("CẢNH BÁO: Không tìm thấy license.key. Mặc định vô hiệu hóa tính năng cao cấp.");
+            data[col] = {};
+        }
+        return; // Skip normal json loading
+    }
+
     const filePath = path.join(dataDir, `${col}.json`);
     if (fs.existsSync(filePath)) {
         data[col] = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -40,12 +58,15 @@ collections.forEach(col => {
 });
 
 function saveDB(collectionName) {
+    if (collectionName === 'features' && env === 'production') return; // Do not save features to json in PRD
+
     if (collectionName && data[collectionName]) {
         const filePath = path.join(dataDir, `${collectionName}.json`);
         fs.writeFileSync(filePath, JSON.stringify(data[collectionName], null, 2));
     } else {
         // Save all
         collections.forEach(col => {
+            if (col === 'features' && env === 'production') return;
             if (data[col] !== undefined) {
                 const filePath = path.join(dataDir, `${col}.json`);
                 fs.writeFileSync(filePath, JSON.stringify(data[col], null, 2));

@@ -27,14 +27,14 @@ echo [2/4] Dang copy core API (Backend)...
 if not exist "%TARGET%" mkdir "%TARGET%"
 xcopy /s /y /i backend\* "%TARGET%\" /exclude:deploy-exclude.txt > nul
 
-:: 4. Copy config PRD neu co
-echo [3/4] Dang ap dung cau hinh go'i tinh nang...
+:: 4. Copy License PRD neu co
+echo [3/4] Dang ap dung ban quyen (License Key)...
 if not exist "%TARGET%\data" mkdir "%TARGET%\data"
-if exist backend\data-dev\features.json (
-    copy /y backend\data-dev\features.json "%TARGET%\data\features.json" > nul
-    echo   - Da cap nhat features.json
+if exist backend\data-dev\license.key (
+    copy /y backend\data-dev\license.key "%TARGET%\data\license.key" > nul
+    echo   - Da cap nhat license.key
 ) else (
-    echo   - Khong co thay doi features.json
+    echo   - Khong tim thay license.key moi (Giu nguyen ban quyen cu).
 )
 
 :: 5. Copy Frontend Dist va Script Khoi Dong

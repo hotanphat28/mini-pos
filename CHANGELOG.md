@@ -7,9 +7,10 @@ Tất cả các thay đổi và cập nhật tính năng của dự án Mini POS
 ### Đã thêm (Added)
 - **Tách biệt Triển khai (Deployment Separation)**: Kiến trúc hoàn toàn mới giúp tách biệt Repo code (DEV) và Môi trường chạy thật (PRD). Thêm script `deploy.bat` và `deploy.sh` để tự động build, đóng gói và cài đặt phần mềm sang thư mục khách hàng (VD: `C:\MiniPOS`) mà không làm ảnh hưởng đến dữ liệu cũ.
 - **Tích hợp Port (PRD)**: Ở môi trường PRD, Backend (Node.js) tự động host tĩnh các file build của Frontend (React). Khách hàng chỉ cần khởi chạy 1 server duy nhất trên cổng 3001 cho cả UI lẫn API, tối ưu hóa tài nguyên và trải nghiệm.
+- **Mã Hóa Bản Quyền (License Key)**: Hệ thống PRD không còn dùng file `.json` cấu hình thô. Công cụ cấu hình giờ sẽ sinh ra một tệp `license.key` được mã hóa Base64 để chống khách hàng sửa trộm và tự ý nâng cấp tính năng.
 
 ### Thay đổi (Changed)
-- **Công cụ Cấu hình**: Giao diện dòng lệnh `config.bat` giờ đây chỉ ghi cấu hình vào môi trường DEV. Bản cấu hình này sẽ tự động được mang sang PRD trong lúc chạy lệnh Deploy.
+- **Công cụ Cấu hình**: Giao diện dòng lệnh `config.bat` được nâng cấp để phục vụ 2 mục đích rõ ràng: (1) Cấu hình nội bộ cho môi trường DEV để test, và (2) Sinh mã Kích hoạt bản quyền (`license.key`) để gửi cho khách hàng PRD.
 - **Làm sạch Repo**: Xóa bỏ hoàn toàn dấu vết dữ liệu thật (thư mục `backend/data/`) và các script khởi động PRD dư thừa (`start.bat`, `start.sh`) khỏi repo lưu trữ code. Codebase giờ đây là DEV 100% sạch sẽ.
 
 ## [1.6.0] - 2026-06-07
