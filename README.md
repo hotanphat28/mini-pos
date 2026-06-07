@@ -8,28 +8,28 @@ Hệ thống quản lý bán hàng (Point of Sale) nhỏ gọn dành cho quán c
 - `frontend/`: Ứng dụng Single Page bằng ReactJS + Vite + Tailwind CSS. Giao diện tối ưu cho máy tính thu ngân và điện thoại. Được trang bị kiến trúc **Feature Flags** linh hoạt, cùng các tính năng mạnh mẽ: Quản lý Ca làm việc, Thanh toán mã QR động, Sơ đồ bàn, Báo cáo doanh thu, hệ thống **Quản lý Kho (Inventory)** kèm thiết lập định lượng cho món, và chương trình **Khách hàng thân thiết (Loyalty & Vouchers)**.
 
 ## Hướng dẫn khởi động & Môi trường
-Dự án cung cấp công cụ tự động phân tách 2 môi trường để giữ an toàn dữ liệu thật.
+Dự án được quy hoạch theo chuẩn: Repo chứa code đóng vai trò là "Nhà máy (DEV)", dùng để test và xuất xưởng phần mềm ra môi trường chạy thật của khách hàng (PRD).
 
-### 1. Môi trường Thực tế (Production)
-Chạy ứng dụng tối ưu hóa tĩnh và lưu trữ dữ liệu chính thức tại `backend/data/`. Sử dụng khi hoạt động bán hàng.
-- **Windows**: Click đúp vào file `start.bat`.
-- **Linux/Mac**: Cấp quyền và chạy `./start.sh` (`chmod +x start.sh && ./start.sh`).
-
-### 2. Môi trường Thử nghiệm (Development)
-Chạy ứng dụng ở chế độ hỗ trợ chỉnh sửa và lưu trữ dữ liệu tại `backend/data-dev/`. Bạn có thể thao tác test hóa đơn thoải mái.
+### 1. Môi trường Thử nghiệm (Development)
+Chạy ứng dụng ở chế độ hỗ trợ chỉnh sửa code và test tính năng. Dữ liệu rác sinh ra được lưu tại `backend/data-dev/`.
 - **Windows**: Click đúp vào file `start-dev.bat`.
 - **Linux/Mac**: Cấp quyền và chạy `./start-dev.sh`.
-- **Dọn dẹp rác Test (Reset)**: Khi muốn "tẩy trắng" dữ liệu test, chỉ cần chạy `reset-dev.bat` (Windows) hoặc `./reset-dev.sh` (Linux/Mac). Lần khởi động Dev tiếp theo sẽ tự động có lại tài khoản gốc.
+- **Dọn dẹp rác Test (Reset)**: Khi muốn "tẩy trắng" dữ liệu test, chỉ cần chạy `reset-dev.bat` (Windows) hoặc `./reset-dev.sh` (Linux/Mac).
 
-### 3. Công cụ Cấu hình Gói (Configurator Tool)
-Hệ thống cho phép bật/tắt các module tính năng (Feature Flags) dễ dàng qua giao diện dòng lệnh thay vì sửa file code.
+### 2. Công cụ Cấu hình Gói (Configurator Tool)
+Hệ thống cho phép cấu hình tính năng (Feature Flags) thông qua giao diện dòng lệnh.
 - **Windows**: Click đúp vào file `config.bat`.
 - **Linux/Mac**: Cấp quyền và chạy `./config.sh`.
-- Tool cho phép chọn cấu hình riêng cho môi trường Thực tế hoặc Thử nghiệm, hỗ trợ gán nhanh theo 3 Gói cài sẵn: **BASIC** (Cơ bản), **PRO** (Chuyên nghiệp), **PREMIUM** (Toàn diện).
+- Tool hỗ trợ chọn nhanh 3 Gói: **BASIC** (Cơ bản), **PRO** (Chuyên nghiệp), **PREMIUM** (Toàn diện). Cấu hình này sẽ được áp dụng khi bạn chạy lệnh Deploy.
 
-Mặc định:
-- Backend chạy tại: `http://localhost:3001`
-- Frontend chạy tại: `http://localhost:3000` (Các thiết bị điện thoại/tablet kết nối chung Wi-Fi có thể truy cập qua địa chỉ IP LAN của máy chủ).
+### 3. Đóng gói & Triển khai Thực tế (Production Deployment)
+Dùng script này để Build và Đóng gói phần mềm sang một thư mục độc lập trên máy khách hàng. Dữ liệu mua bán của khách hàng hoàn toàn tách biệt khỏi repo code.
+- **Windows**: Click đúp vào file `deploy.bat` (Mặc định cài đặt vào `C:\MiniPOS`).
+- **Linux/Mac**: Chạy `./deploy.sh` (Mặc định cài đặt vào `~/mini-pos-prd`).
+- Tại thư mục đích (VD: `C:\MiniPOS`), khách hàng chỉ cần click chạy file `start.bat`. Hệ thống sẽ tối ưu khởi chạy **1 Server duy nhất** (cổng 3001) phục vụ cả giao diện UI và API!
+
+Mặc định ở PRD:
+- Cả Backend và Frontend cùng chạy chung tại: `http://localhost:3001` (Có thể truy cập qua địa chỉ IP LAN để dùng trên điện thoại).
 
 ## Tài khoản mặc định
 - **Admin**: `admin` / pass: `admin123`
